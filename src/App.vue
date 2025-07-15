@@ -1,5 +1,6 @@
 <template>
   <main class="main">
+    <SearchHeader @search="onSearch"/>
     <h1 class="title">Список товаров</h1>
     <div v-if="loading">
       <div class="loader"></div>
@@ -12,19 +13,41 @@
       </div>
     </div>
     <div v-else>
-      <ProductList :products="products"/>
+      <ProductList :products="filteredProducts"/>
     </div>
   </main>
 </template>
 
 <script setup>
-import {ref, onMounted} from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import ProductList from './components/ProductList.vue';
+import SearchHeader from "./components/SearchHeader.vue";
 
 const error = ref(null);
 const products = ref([]);
 const loading = ref(true);
 const apiUrl = 'https://fakestoreapi.com/products';
+
+const filter = ref({ query: '', price: null });
+
+function onSearch(payload) {
+  filter.value = payload;
+}
+
+const filteredProducts = computed(() => {
+  if ((!filter.value.query || filter.value.query.trim() === '') && (filter.value.price === null || filter.value.price === '')) {
+    return products.value;
+  }
+  return products.value.filter(product => {
+    const matchTitle = filter.value.query
+        ? product.title.toLowerCase().includes(filter.value.query.toLowerCase())
+        : false;
+    const matchPrice = filter.value.price !== null && filter.value.price !== ''
+        ? product.price <= filter.value.price
+        : false;
+    return matchTitle || matchPrice;
+  });
+});
 
 const fetchData = async () => {
   loading.value = true;
